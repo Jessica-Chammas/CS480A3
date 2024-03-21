@@ -38,7 +38,7 @@ Level::~Level() {
 
 void Level::insertMapForVpn2Pfn(unsigned int vpn, int frame) {
     // Calculate the index at this level using bit masking and shifting
-    uint32_t index = (vpn & pageTablePtr->bitMask[depth]) >> pageTablePtr->bitShift[depth];
+    uint32_t index = pageTablePtr -> extractVPNFromVirtualAddress(vpn, pageTablePtr -> bitMask[depth], pageTablePtr -> bitShift[depth]);
 
     // Leaf node
     if (depth == pageTablePtr->levelCount - 1) { 
@@ -58,7 +58,7 @@ void Level::insertMapForVpn2Pfn(unsigned int vpn, int frame) {
 
 Map* Level::searchMappedPfn(unsigned int virtualAddress) {
     // Calculate the index at this level using bit masking and shifting
-    uint32_t index = (virtualAddress & pageTablePtr->bitMask[depth]) >> pageTablePtr->bitShift[depth];
+    uint32_t index = pageTablePtr -> extractVPNFromVirtualAddress(virtualAddress, pageTablePtr -> bitMask[depth], pageTablePtr -> bitShift[depth]);
 
     // Leaf node
     if (depth == pageTablePtr->levelCount - 1) { 
