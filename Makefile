@@ -5,7 +5,7 @@ CC = g++
 CFLAGS = -Wall -std=c++11
 
 # The build target executable
-TARGET = pagetable
+TARGET = pagingwithpr
 
 # Source files
 SRCS = Levels.cpp log_helpers.cpp main.cpp pagetable.cpp vaddr_tracereader.cpp
