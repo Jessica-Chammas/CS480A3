@@ -8,7 +8,7 @@ CFLAGS = -Wall -std=c++11
 TARGET = pagingwithpr
 
 # Source files
-SRCS = Levels.cpp log_helpers.cpp main.cpp pagetable.cpp vaddr_tracereader.cpp
+SRCS = Levels.cpp log_helpers.cpp main.cpp pageTable.cpp vaddr_tracereader.cpp
 
 # Object files
 OBJS = $(SRCS:.cpp=.o)

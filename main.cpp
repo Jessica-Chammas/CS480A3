@@ -5,6 +5,7 @@
 #include <numeric>
 #include <unistd.h> //needed for getopt to work
 #include "PageTable.h"
+#include "vaddr_tracereader.h"
 #include "log_helpers.h" 
 
 int main(int argc, char** argv) {
