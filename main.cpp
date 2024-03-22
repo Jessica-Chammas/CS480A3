@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     std::vector<int> shifts;
     std::vector<int> entryCounts;
     int shiftAccumulator = 0;
-    int accesses_processed =0;
+
     int page_hits = 0;
     int page_faults = 0; // To count page faults
     p2AddrTr addr; // Simulate processing of addresses from the trace file
@@ -94,9 +94,34 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    //BitMask aka "-l" option logging is only case where you do not need to traverse through file
-    //thus do this before making Page Table object
-    if(log_mode =="bitmasks"){
+    int addressesProcessed = 0;
+    int offsetBits = 32 - total_bits; // Calculate bits used for offset
+    unsigned int offsetMask = (1u << offsetBits) - 1; // Mask to extract offset
+    //printf("Page number = 0x%x\n", offsetMask); for debugging purposes to show that offsetmask is 0xfff
+    
+     // Process addresses based on log mode
+        if (log_mode == "offset") {
+        while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
+        // Extract the offset by performing a bitwise AND with the offset mask
+        unsigned int offset = addr.addr & offsetMask;
+        // Print the offset using the provided print_num_inHex function
+        print_num_inHex(offset);
+        addressesProcessed++;
+     }
+    } else if (log_mode == "vpns_pfn") {
+        while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
+            // Extract the VPN by shifting the address to the right by the offset bits
+            unsigned int vpn = addr.addr >> offsetBits;
+
+            // Perform VPN to PFN translation
+           // int pfn = vpn_to_pfn(vpn, bitsPerLevel);
+
+            // Print the PFN using the provided print_num_inHex function
+           // print_num_inHex(pfn);
+
+            addressesProcessed++;
+        }
+    } else if(log_mode =="bitmasks"){
          std::vector<uint32_t> masks(bitsPerLevel.size());
         int shift = 32;
 
@@ -108,6 +133,7 @@ int main(int argc, char** argv) {
         log_bitmasks(masks.size(), masks.data());
         return EXIT_SUCCESS; // Terminate after logging for 'bitmasks' mode
     }
+
 
 
 
@@ -130,19 +156,20 @@ int main(int argc, char** argv) {
     // Initialize the PageTable object
     PageTable pageTable(bitsPerLevel.size(), bitMasks, shifts, entryCounts);
    
-   // go through file (NextAddress is how he says to do it)
-    while (NextAddress(traceFile, &addr) && (num_accesses == -1 )) {
-     unsigned int vAddr = addr.addr;
-    if (pageTable.searchMappedPfn(vAddr) != nullptr) {
-        page_hits++;
-    } else {
-        pageTable.insertMapForVpn2Pfn(vAddr, accesses_processed % num_frames);
-        page_faults++;
-    }
-    accesses_processed++;
-    }
 
-    //close the file
+//    // go through file (NextAddress is how he says to do it)
+//     while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
+//      unsigned int vAddr = addr.addr;
+//     if (pageTable.searchMappedPfn(vAddr) != nullptr) {
+//         page_hits++;
+//     } else {
+//         pageTable.insertMapForVpn2Pfn(vAddr, accesses_processed % num_frames);
+//         page_faults++;
+//     }
+//     accesses_processed++;
+//     }
+
+//     //close the file
     fclose(traceFile);
 
 
