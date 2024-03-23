@@ -22,13 +22,8 @@ int main(int argc, char** argv) {
     std::vector<int> shifts;
     std::vector<int> entryCounts;
     int shiftAccumulator = 0;
-
-    int page_hits = 0;
-    int page_faults = 0; // To count page faults
     p2AddrTr addr; // Simulate processing of addresses from the trace file
     
-
-
 
     // Parsing optional arguments
     int opt;
@@ -94,58 +89,9 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    int addressesProcessed = 0;
-    int offsetBits = 32 - total_bits; // Calculate bits used for offset
-    unsigned int offsetMask = (1u << offsetBits) - 1; // Mask to extract offset
-    //printf("Page number = 0x%x\n", offsetMask); for debugging purposes to show that offsetmask is 0xfff
-    
-     // Process addresses based on log mode
-        if (log_mode == "offset") {
-        while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
-        // Extract the offset by performing a bitwise AND with the offset mask
-        unsigned int offset = addr.addr & offsetMask;
-        // Print the offset using the provided print_num_inHex function
-        print_num_inHex(offset);
-        addressesProcessed++;
-     }
-    } else if (log_mode == "vpns_pfn") {
-        while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
-            // Extract the VPN by shifting the address to the right by the offset bits
-            unsigned int vpn = addr.addr >> offsetBits;
 
-            // Perform VPN to PFN translation
-           // int pfn = vpn_to_pfn(vpn, bitsPerLevel);
-
-            // Print the PFN using the provided print_num_inHex function
-           // print_num_inHex(pfn);
-
-            addressesProcessed++;
-        }
-    } else if(log_mode =="bitmasks"){
-         std::vector<uint32_t> masks(bitsPerLevel.size());
-        int shift = 32;
-
-        for (size_t i = 0; i < bitsPerLevel.size(); ++i) {
-            shift -= bitsPerLevel[i];
-            masks[i] = ((1U << bitsPerLevel[i]) - 1) << shift;
-        }
-
-        log_bitmasks(masks.size(), masks.data());
-        return EXIT_SUCCESS; // Terminate after logging for 'bitmasks' mode
-    }
-
-
-
-
-
-    // Initialize the PageTable object here with the parameters we just got
-    // needs this info PageTable(int lc, const std::vector<unsigned int>& bitmasks, const std::vector<int>& shifts, const std::vector<int>& entryCounts);
-    //should calculate bitmasks and shifts and entry counts before making this page table
-    //could make functions here to do so?
-    //I will clean this up lol sorry its ugly code
-    
-    
-    for (int i = 0; i < bitsPerLevel.size(); i++) {
+    // calculate masks + shifts to be able to make Page Table object
+     for (int i = 0; i < bitsPerLevel.size(); i++) {
         unsigned int mask = ((1u << bitsPerLevel[i]) - 1) << shiftAccumulator;
         bitMasks.push_back(mask);
         shifts.push_back(shiftAccumulator);
@@ -155,31 +101,65 @@ int main(int argc, char** argv) {
 
     // Initialize the PageTable object
     PageTable pageTable(bitsPerLevel.size(), bitMasks, shifts, entryCounts);
+    pageTable.setBitstringInterval(bitstring_interval);
    
 
-//    // go through file (NextAddress is how he says to do it)
-//     while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
-//      unsigned int vAddr = addr.addr;
-//     if (pageTable.searchMappedPfn(vAddr) != nullptr) {
-//         page_hits++;
-//     } else {
-//         pageTable.insertMapForVpn2Pfn(vAddr, accesses_processed % num_frames);
-//         page_faults++;
-//     }
-//     accesses_processed++;
-//     }
-
-//     //close the file
-    fclose(traceFile);
+    // required to log offset mode
+    int addressesProcessed = 0;
+    int offsetBits = 32 - total_bits; // Calculate bits used for offset
+    unsigned int offsetMask = (1u << offsetBits) - 1; // Mask to extract offset
+    //printf("Page number = 0x%x\n", offsetMask); for debugging purposes to show that offsetmask is 0xfff
 
 
-    // Implement the logging based on the chosen log_mode using the functions provided in log_helpers.h/cpp
-    // Summary logging at the end of processing
+     // Process addresses based on log mode
+    if (log_mode == "offset") {
+        while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
+        // Extract the offset by performing a bitwise AND with the offset mask
+        unsigned int offset = addr.addr & offsetMask;
+        // Print the offset using the provided print_num_inHex function
+        print_num_inHex(offset);
+        addressesProcessed++;
+     }
+    } else if (log_mode == "vpns_pfn") {
+    // need to do this still
+    }else if(log_mode =="bitmasks"){
+        // vector to store the bitmask for each level of table
+         std::vector<uint32_t> masks(bitsPerLevel.size());
+        int shift = 32; //initializing shift 
 
-    if (log_mode == "summary") {
-    //can't implement this until we do page replacement
+        //loop through each level of the page table to calculate bitmask
+        for (size_t i = 0; i < bitsPerLevel.size(); ++i) {
+            shift -= bitsPerLevel[i]; //decrement by nymber of bits for current level
+            //calculate the bitmask for current level and store in masks vector
+            // this is calculated by shifting 1 left by number of bits for level,
+            // subtracting 1 to get bitsmask of 1s for level length
+            // then shift left again by remaining shift
+            masks[i] = ((1U << bitsPerLevel[i]) - 1) << shift;
+        }
+
+        log_bitmasks(masks.size(), masks.data());  //logging for bitmasks
+
+        return EXIT_SUCCESS; // Terminate after logging for 'bitmasks' mode
+
+    }else if (log_mode == "va2pa"){
+         while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
+            unsigned int virtualAddress = addr.addr;
+            unsigned int physicalAddress = virtualAddress & offsetMask; // Apply mask to retain lower 20 bits (offset mask is 0xfff)
+        
+            // Log the virtual to physical address translation
+            log_va2pa(virtualAddress, physicalAddress);
+            
+            addressesProcessed++;
+        }
+    }else if(log_mode == "vpn2pfn_pr"){
+        //need to do this still
+    }else{
+        //summary case
     }
 
 
+
+    //close file
+    fclose(traceFile);
     return EXIT_SUCCESS;
 }
