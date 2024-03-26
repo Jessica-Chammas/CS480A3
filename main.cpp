@@ -4,6 +4,7 @@
 #include <string>
 #include <numeric>
 #include <unistd.h> //needed for getopt to work
+#include <cstdint>
 #include "PageTable.h"
 #include "vaddr_tracereader.h"
 #include "log_helpers.h" 
@@ -102,6 +103,7 @@ int main(int argc, char** argv) {
     // Initialize the PageTable object
     PageTable pageTable(bitsPerLevel.size(), bitMasks, shifts, entryCounts);
     pageTable.setBitstringInterval(bitstring_interval);
+    
    
 
     // required to log offset mode
@@ -121,27 +123,36 @@ int main(int argc, char** argv) {
         addressesProcessed++;
      }
     } else if (log_mode == "vpns_pfn") {
-    // need to do this still
-    }else if(log_mode =="bitmasks"){
-        // vector to store the bitmask for each level of table
-         std::vector<uint32_t> masks(bitsPerLevel.size());
-        int shift = 32; //initializing shift 
+    while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
+        // Extract the virtual address
+        unsigned int virtualAddress = addr.addr;
 
-        //loop through each level of the page table to calculate bitmask
+        // dynamic size and initialization
+        std::vector<uint32_t> vpns(bitsPerLevel.size(), 0); // Initialized to 0
+
+        unsigned int fullVpn = 0; // To hold the full VPN for accessPage
+        int startBit = 32; //  32-bit virtual address space
+
         for (size_t i = 0; i < bitsPerLevel.size(); ++i) {
-            shift -= bitsPerLevel[i]; //decrement by nymber of bits for current level
-            //calculate the bitmask for current level and store in masks vector
-            // this is calculated by shifting 1 left by number of bits for level,
-            // subtracting 1 to get bitsmask of 1s for level length
-            // then shift left again by remaining shift
-            masks[i] = ((1U << bitsPerLevel[i]) - 1) << shift;
+            startBit -= bitsPerLevel[i]; // Update start bit for the current level
+            unsigned int mask = (1 << bitsPerLevel[i]) - 1;
+            unsigned int vpnPart = (virtualAddress >> startBit) & mask;
+            vpns[i] = vpnPart;
+           
+            fullVpn = (fullVpn << bitsPerLevel[i]) | vpnPart;
         }
 
-        log_bitmasks(masks.size(), masks.data());  //logging for bitmasks
+        // Retrieve the actual PFN using the accessPage method with the fullVpn
+        unsigned int pfn = pageTable.accessPage(fullVpn);
 
-        return EXIT_SUCCESS; // Terminate after logging for 'bitmasks' mode
+        // Log the VPNs for each level and the corresponding PFN
+        log_vpns_pfn(bitsPerLevel.size(), vpns.data(), pfn);
 
-    }else if (log_mode == "va2pa"){
+        addressesProcessed++;
+    }
+}
+
+else if (log_mode == "va2pa"){
          while (NextAddress(traceFile, &addr) && (addressesProcessed < num_accesses || num_accesses == -1)) {
             unsigned int virtualAddress = addr.addr;
             unsigned int physicalAddress = virtualAddress & offsetMask; // Apply mask to retain lower 20 bits (offset mask is 0xfff)

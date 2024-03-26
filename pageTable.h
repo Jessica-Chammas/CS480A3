@@ -30,12 +30,14 @@ public:
     void setBitstringInterval(int interval) {
         bitstring_interval = interval;
     }
+    
+
 
     PageTable(int lc, const std::vector<unsigned int>& bitmasks, const std::vector<int>& shifts, const std::vector<int>& entryCounts);
     ~PageTable();
 
     //Replacement methods
-    void accessPage(unsigned int vpn);
+    unsigned int accessPage(unsigned int vpn);
     void updateAging();
     int selectVictimFrame();
     void replacePage(int frameIndex, unsigned int vpn);

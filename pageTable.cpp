@@ -40,12 +40,14 @@ unsigned int PageTable::extractVPNFromVirtualAddress(unsigned int virtualAddress
 }
 
 //NFU with Aging - Page Replacement code
-void PageTable::accessPage(unsigned int vpn){
+unsigned int PageTable::accessPage(unsigned int vpn){
   bool pageInMemory = false;
+  unsigned int pfn = 0;
  for (int i = 0; i < totalFrames; ++i) {
         if (frameValid[i] && frameVPN[i] == vpn) { // Page hit
             frameBitstring[i] |= (1 << 15); // Set MSB
             frameLastAccess[i] = currentTime++;
+            pfn = i;
             pageInMemory = true;
             break;
         }
@@ -54,8 +56,10 @@ void PageTable::accessPage(unsigned int vpn){
         int victimIdx = selectVictimFrame();
         if (victimIdx != -1) { // Need to replace a page
             replacePage(victimIdx, vpn);
+            pfn = victimIdx;
         } 
     }
+    return pfn;
 }
 void PageTable::updateAging(){
    for(int i = 0; i < totalFrames; ++i){
