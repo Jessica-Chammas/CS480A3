@@ -1,3 +1,6 @@
+//Jessica Chammas- 826401167
+//Baraa Erras -
+
 #include <stdio.h>
 #include "log_helpers.h"
 

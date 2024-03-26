@@ -1,3 +1,6 @@
+//Jessica Chammas- 826401167
+//Baraa Erras -
+
 #include <iostream>
 #include "log_helpers.h"
 #include "pageTable.h"
@@ -42,12 +45,12 @@ unsigned int PageTable::extractVPNFromVirtualAddress(unsigned int virtualAddress
 //NFU with Aging - Page Replacement code
 unsigned int PageTable::accessPage(unsigned int vpn){
   bool pageInMemory = false;
-  unsigned int pfn = 0;
+unsigned int pfn = 0;
  for (int i = 0; i < totalFrames; ++i) {
         if (frameValid[i] && frameVPN[i] == vpn) { // Page hit
             frameBitstring[i] |= (1 << 15); // Set MSB
             frameLastAccess[i] = currentTime++;
-            pfn = i;
+pfn = i;
             pageInMemory = true;
             break;
         }
@@ -56,10 +59,10 @@ unsigned int PageTable::accessPage(unsigned int vpn){
         int victimIdx = selectVictimFrame();
         if (victimIdx != -1) { // Need to replace a page
             replacePage(victimIdx, vpn);
-            pfn = victimIdx;
+pfn = victimIdx;
         } 
     }
-    return pfn;
+return pfn;
 }
 void PageTable::updateAging(){
    for(int i = 0; i < totalFrames; ++i){

@@ -1,3 +1,6 @@
+//Jessica Chammas- 826401167
+//Baraa Erras -
+
 #ifndef LOG_HELPERS_H
 #define LOG_HELPERS_H
 

@@ -1,3 +1,6 @@
+//Jessica Chammas- 826401167
+//Baraa Erras -
+
 #ifndef PAGETABLE_H
 #define PAGETABLE_H
 #include <vector>
@@ -30,11 +33,13 @@ public:
     void setBitstringInterval(int interval) {
         bitstring_interval = interval;
     }
-    
+
 
 
     PageTable(int lc, const std::vector<unsigned int>& bitmasks, const std::vector<int>& shifts, const std::vector<int>& entryCounts);
     ~PageTable();
+
+    void insertMapForVpn2Pfn(unsigned int virtualAddress, int frame);
 
     //Replacement methods
     unsigned int accessPage(unsigned int vpn);
