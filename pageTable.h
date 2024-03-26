@@ -2,6 +2,7 @@
 #define PAGETABLE_H
 #include <vector>
 #include <cstdint>
+#include <map>
 #include "Map.h"
 
 class Level;
@@ -13,6 +14,8 @@ public:
     std::vector<int> bitShift;
     std::vector<int> entryCount;
     Level* rootNodePtr;
+    unsigned int pageHits;
+    unsigned int frameCounter = 0;
 
     // Frame management attributes
     std::vector<int> frameVPN; // Track the VPN each frame maps to
@@ -20,7 +23,7 @@ public:
     std::vector<bool> frameValid; // Whether the frame is occupied
     std::vector<unsigned int> frameLastAccess; // Last access time for aging
     unsigned int currentTime; // Current time for "aging" the frames
-    int totalFrames; // Total number of physical frames
+    int totalFrames; // Total number of physical frames default
     int bitstring_interval;
 
      // Setter method for bitstring_interval
@@ -38,9 +41,13 @@ public:
     void replacePage(int frameIndex, unsigned int vpn);
 
 
-    void insertMapForVpn2Pfn(unsigned int virtualAddress, int frame);
+    void insertMapForVpn2Pfn(unsigned int virtualAddress);
     Map* searchMappedPfn(unsigned int virtualAddress);
     unsigned int extractVPNFromVirtualAddress(unsigned int virtualAddress, unsigned int mask, unsigned int shift);
+    unsigned int calculateTotalBytes() const;
+    int selectFrameForMapping(unsigned int vpn);
+
+
 };
 
 #endif // PAGETABLE_H
