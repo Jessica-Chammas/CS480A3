@@ -26,9 +26,21 @@ PageTable::~PageTable() {
 }
 
 // Insert function
-void PageTable::insertMapForVpn2Pfn(unsigned int virtualAddress, int frame) {
-    // Call on Levels Insert
-    rootNodePtr -> insertMapForVpn2Pfn(virtualAddress, frame);
+void PageTable::insertMapForVpn2Pfn(unsigned int virtualAddress) {
+    // Check if vpn already exists in physical memory 
+    if(searchMappedPfn(virtualAddress) != nullptr){
+        pageHits++;
+        return;
+    }
+
+    // If not then find proper frame 
+    unsigned int frameIndex = selectFrameForMapping(virtualAddress);
+
+    // No frames left page replacement 
+    if(frameIndex == -1) return;
+
+    // Call on Levels insert 
+    rootNodePtr -> insertMapForVpn2Pfn(virtualAddress, frameIndex);
 }
 
 // Search function
@@ -131,4 +143,51 @@ void PageTable::replacePage(int frameIndex, unsigned int vpn){
             }
         }
     }
+}
+
+int PageTable::selectFrameForMapping(unsigned int vpn) {
+    // Check for a free frame
+    for (int i = 0; i < totalFrames; i++) {
+        if (!frameValid[i]) {
+            // Free frame found 
+            frameValid[i] = true;
+            frameCounter++;
+            return i; 
+        }
+    }
+
+    // Keep -1 for now if no frame was found 
+    return -1;
+}
+
+unsigned int PageTable::calculateTotalBytes() const {
+    unsigned int totalBytes = 0;
+    
+    // Include the size of the root node itself
+    totalBytes += sizeof(Level);
+    
+    // Recursive function to calculate 
+    std::function<void(const Level*)> calculateSize = [&](const Level* level) {
+        if (!level) return;
+        
+        // If it's a leaf node, calculate the size based on the number of mappings
+        if (level->depth == levelCount - 1) {
+            totalBytes += sizeof(Map) * entryCount[level->depth];
+        } else {
+            // For non-leaf nodes, include the size of pointers to next levels
+            totalBytes += sizeof(Level*) * entryCount[level->depth];
+            // Recursively calculate the size for each next level
+            for (int i = 0; i < entryCount[level->depth]; i++) {
+                if (level->nextLevels[i] != nullptr) {
+                    totalBytes += sizeof(Level);
+                    calculateSize(level->nextLevels[i]);
+                }
+            }
+        }
+    };
+
+    // Start the recursive calculation from the root node
+    calculateSize(rootNodePtr);
+    
+    return totalBytes;
 }
