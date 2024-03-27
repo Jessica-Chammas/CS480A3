@@ -1,5 +1,5 @@
 //Jessica Chammas- 826401167
-//Baraa Erras -
+//Baraa Erras - 825786501
 
 #ifndef PAGETABLE_H
 #define PAGETABLE_H
@@ -38,8 +38,6 @@ public:
 
     PageTable(int lc, const std::vector<unsigned int>& bitmasks, const std::vector<int>& shifts, const std::vector<int>& entryCounts);
     ~PageTable();
-
-    void insertMapForVpn2Pfn(unsigned int virtualAddress, int frame);
 
     //Replacement methods
     unsigned int accessPage(unsigned int vpn);
